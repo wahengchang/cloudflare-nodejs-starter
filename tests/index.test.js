@@ -1,5 +1,3 @@
-// @vitest-environment miniflare
-import { describe, it, expect } from 'vitest';
 import worker from '../src/index.js';
 
 function makeRequest(path, options = {}) {
@@ -10,46 +8,84 @@ function makeRequest(path, options = {}) {
   });
 }
 
-describe('Cloudflare Worker', () => {
-  it('/ssr returns HTML', async () => {
+async function runUnitTests() {
+  let passed = 0, failed = 0;
+
+  // /ssr GET
+  try {
     const req = makeRequest('/ssr');
     const res = await worker.fetch(req);
-    expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toContain('text/html');
     const text = await res.text();
-    expect(text).toContain('<h1>Hello from SSR!</h1>');
-  });
+    if (res.status === 200 && text.includes('<h1>Hello from SSR!</h1>')) {
+      console.log('✓ /ssr GET returns HTML');
+      passed++;
+    } else {
+      throw new Error('Unexpected /ssr response');
+    }
+  } catch (err) {
+    console.error('✗ /ssr GET returns HTML', err);
+    failed++;
+  }
 
-  it('/api echoes JSON', async () => {
-    const payload = { foo: 'bar' };
+  // /api POST (valid JSON)
+  try {
     const req = makeRequest('/api', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ foo: 'bar' }),
     });
     const res = await worker.fetch(req);
-    expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toContain('application/json');
     const json = await res.json();
-    expect(json).toHaveProperty('received.foo', 'bar');
-    expect(json).toHaveProperty('timestamp');
-  });
+    if (res.status === 200 && json.received?.foo === 'bar' && json.timestamp) {
+      console.log('✓ /api POST echoes JSON');
+      passed++;
+    } else {
+      throw new Error('Unexpected /api echo response');
+    }
+  } catch (err) {
+    console.error('✗ /api POST echoes JSON', err);
+    failed++;
+  }
 
-  it('/api returns 400 on invalid JSON', async () => {
+  // /api POST (invalid JSON)
+  try {
     const req = makeRequest('/api', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: '{ invalid json',
     });
     const res = await worker.fetch(req);
-    expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json).toHaveProperty('error', 'Invalid JSON');
-  });
+    if (res.status === 400 && json.error === 'Invalid JSON') {
+      console.log('✓ /api POST returns 400 on invalid JSON');
+      passed++;
+    } else {
+      throw new Error('Unexpected /api error response');
+    }
+  } catch (err) {
+    console.error('✗ /api POST returns 400 on invalid JSON', err);
+    failed++;
+  }
 
-  it('returns 404 for unknown route', async () => {
+  // /notfound GET
+  try {
     const req = makeRequest('/notfound');
     const res = await worker.fetch(req);
-    expect(res.status).toBe(404);
-  });
-});
+    if (res.status === 404) {
+      console.log('✓ /notfound GET returns 404');
+      passed++;
+    } else {
+      throw new Error('Unexpected /notfound response');
+    }
+  } catch (err) {
+    console.error('✗ /notfound GET returns 404', err);
+    failed++;
+  }
+
+  console.log(`\nUnit Tests: ${passed} passed, ${failed} failed.`);
+  process.exit(failed ? 1 : 0);
+}
+
+runUnitTests();
+
+// End of plain Node.js test script

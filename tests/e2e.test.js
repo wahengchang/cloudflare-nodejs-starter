@@ -1,40 +1,77 @@
-import { describe, it, expect } from 'vitest';
-
 const BASE_URL = 'http://localhost:8787';
 
-describe('E2E: Cloudflare Worker', () => {
-  it('GET /ssr returns HTML', async () => {
-    const res = await fetch(`${BASE_URL}/ssr`);
-    expect(res.status).toBe(200);
-    const text = await res.text();
-    expect(text).toContain('<h1>Hello from SSR!</h1>');
-  });
+async function runE2ETests() {
+  let passed = 0, failed = 0;
 
-  it('POST /api echoes JSON', async () => {
+  // GET /ssr
+  try {
+    const res = await fetch(`${BASE_URL}/ssr`);
+    const text = await res.text();
+    if (res.status === 200 && text.includes('<h1>Hello from SSR!</h1>')) {
+      console.log('✓ GET /ssr returns HTML');
+      passed++;
+    } else {
+      throw new Error('Unexpected /ssr response');
+    }
+  } catch (err) {
+    console.error('✗ GET /ssr returns HTML', err);
+    failed++;
+  }
+
+  // POST /api echoes JSON
+  try {
     const res = await fetch(`${BASE_URL}/api`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ foo: 'bar' }),
     });
-    expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json).toHaveProperty('received.foo', 'bar');
-    expect(json).toHaveProperty('timestamp');
-  });
+    if (res.status === 200 && json.received?.foo === 'bar' && json.timestamp) {
+      console.log('✓ POST /api echoes JSON');
+      passed++;
+    } else {
+      throw new Error('Unexpected /api echo response');
+    }
+  } catch (err) {
+    console.error('✗ POST /api echoes JSON', err);
+    failed++;
+  }
 
-  it('POST /api returns 400 on invalid JSON', async () => {
+  // POST /api returns 400 on invalid JSON
+  try {
     const res = await fetch(`${BASE_URL}/api`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: '{ invalid json',
     });
-    expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json).toHaveProperty('error', 'Invalid JSON');
-  });
+    if (res.status === 400 && json.error === 'Invalid JSON') {
+      console.log('✓ POST /api returns 400 on invalid JSON');
+      passed++;
+    } else {
+      throw new Error('Unexpected /api error response');
+    }
+  } catch (err) {
+    console.error('✗ POST /api returns 400 on invalid JSON', err);
+    failed++;
+  }
 
-  it('GET /notfound returns 404', async () => {
+  // GET /notfound returns 404
+  try {
     const res = await fetch(`${BASE_URL}/notfound`);
-    expect(res.status).toBe(404);
-  });
-});
+    if (res.status === 404) {
+      console.log('✓ GET /notfound returns 404');
+      passed++;
+    } else {
+      throw new Error('Unexpected /notfound response');
+    }
+  } catch (err) {
+    console.error('✗ GET /notfound returns 404', err);
+    failed++;
+  }
+
+  console.log(`\nE2E Tests: ${passed} passed, ${failed} failed.`);
+  process.exit(failed ? 1 : 0);
+}
+
+runE2ETests();
