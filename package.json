@@ -1,0 +1,16 @@
+{
+  "name": "cloudflare-nodejs-starter",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cloudflare Worker SSR/API starter",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "npx wrangler dev --port=8787",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "vitest-environment-miniflare": "^2.14.4",
+    "wrangler": "^3.0.0"
+  }
+}
