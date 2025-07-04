@@ -37,6 +37,21 @@ async function runE2ETests() {
     failed++;
   }
 
+  // GET /assets/js/vendor/sample.js returns JS file
+  try {
+    const res = await fetch(`${BASE_URL}/js/vendor/sample.js`);
+    const text = await res.text();
+    if (res.status === 200 && text.includes('Loaded vendor JS')) {
+      console.log('✓ GET /assets/js/vendor/sample.js returns JS file');
+      passed++;
+    } else {
+      throw new Error('Unexpected /assets/js/vendor/sample.js response');
+    }
+  } catch (err) {
+    console.error('✗ GET /assets/js/vendor/sample.js returns JS file', err);
+    failed++;
+  }
+
   // POST /api returns 400 on invalid JSON
   try {
     const res = await fetch(`${BASE_URL}/api`, {

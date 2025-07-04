@@ -6,6 +6,11 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
 
+    // Serve static assets for all non-API/non-SSR requests
+    if (!pathname.startsWith('/ssr') && !pathname.startsWith('/api')) {
+      return env.ASSETS.fetch(request);
+    }
+
     if (pathname === '/ssr' && request.method === 'GET') {
       // Simple SSR endpoint
       const content = `<h1>Hello from SSR!</h1><p>Time: ${new Date().toLocaleString()}</p>`;
