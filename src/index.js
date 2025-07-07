@@ -1,4 +1,5 @@
-import { handleSSR, handleAPI } from './handlers.js';
+import { handleSSR } from './routers/ssr.js';
+import { handleAPI } from './routers/api.js';
 
 export default {
   async fetch(request, env, ctx) {

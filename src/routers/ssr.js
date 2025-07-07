@@ -14,3 +14,11 @@ export const htmlTemplate = (content) => `
 </body>
 </html>
 `;
+
+export async function handleSSR() {
+  const content = `<h1>Hello from SSR!</h1><p>Time: ${new Date().toLocaleString()}</p>`;
+  const html = htmlTemplate(content);
+  return new Response(html, {
+    headers: { 'Content-Type': 'text/html' }
+  });
+}
